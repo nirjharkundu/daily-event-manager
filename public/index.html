@@ -50,6 +50,30 @@
 
       <section class="layout">
         <aside class="panel composer">
+          <section class="date-card" aria-label="Selected date">
+            <span class="date-card-day" id="selectedDayName">Wednesday</span>
+            <strong id="selectedDateNumber">8</strong>
+            <span id="selectedMonthYear">July 2026</span>
+          </section>
+
+          <section class="mini-calendar" aria-label="Mini calendar">
+            <div class="calendar-head">
+              <button class="calendar-nav" id="prevMonth" type="button" aria-label="Previous month">Prev</button>
+              <strong id="calendarMonthLabel"></strong>
+              <button class="calendar-nav" id="nextMonth" type="button" aria-label="Next month">Next</button>
+            </div>
+            <div class="calendar-grid weekdays" aria-hidden="true">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+            <div class="calendar-grid calendar-days" id="calendarDays"></div>
+          </section>
+
           <h2 id="formTitle">Add event</h2>
           <form id="eventForm">
             <input type="hidden" id="eventId">

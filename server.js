@@ -246,8 +246,10 @@ async function handleApi(req, res) {
       const user = requireAuth(req, res, db);
       if (!user) return;
       const date = url.searchParams.get("date");
+      const month = url.searchParams.get("month");
       const events = db.events
         .filter(event => !date || event.date === date)
+        .filter(event => !month || event.date.startsWith(`${month}-`))
         .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
       return sendJson(res, 200, { events });
     }

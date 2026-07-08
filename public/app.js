@@ -1,7 +1,9 @@
 const state = {
   user: null,
   events: [],
+  monthEvents: [],
   selectedDate: new Date().toISOString().slice(0, 10),
+  visibleMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   authMode: "login"
 };
 
@@ -17,6 +19,13 @@ const el = {
   password: document.querySelector("#password"),
   tabs: document.querySelectorAll(".tab"),
   todayLabel: document.querySelector("#todayLabel"),
+  selectedDayName: document.querySelector("#selectedDayName"),
+  selectedDateNumber: document.querySelector("#selectedDateNumber"),
+  selectedMonthYear: document.querySelector("#selectedMonthYear"),
+  calendarMonthLabel: document.querySelector("#calendarMonthLabel"),
+  calendarDays: document.querySelector("#calendarDays"),
+  prevMonth: document.querySelector("#prevMonth"),
+  nextMonth: document.querySelector("#nextMonth"),
   datePicker: document.querySelector("#datePicker"),
   logoutButton: document.querySelector("#logoutButton"),
   userPill: document.querySelector("#userPill"),
@@ -68,6 +77,22 @@ function prettyDate(dateString) {
   });
 }
 
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthKey(dateString) {
+  return dateString.slice(0, 7);
+}
+
+function syncVisibleMonth() {
+  const selected = new Date(`${state.selectedDate}T12:00:00`);
+  state.visibleMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+}
+
 function escapeHtml(value) {
   return String(value || "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
@@ -93,7 +118,8 @@ function showMain(user) {
   el.mainView.hidden = false;
   el.userPill.textContent = user.displayName;
   resetForm();
-  loadEvents();
+  syncVisibleMonth();
+  loadMonthEvents();
 }
 
 function showAuth() {
@@ -118,8 +144,12 @@ function filteredEvents() {
 }
 
 function render() {
+  const selected = new Date(`${state.selectedDate}T12:00:00`);
   el.datePicker.value = state.selectedDate;
   el.todayLabel.textContent = prettyDate(state.selectedDate);
+  el.selectedDayName.textContent = selected.toLocaleDateString(undefined, { weekday: "long" });
+  el.selectedDateNumber.textContent = selected.getDate();
+  el.selectedMonthYear.textContent = selected.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   const visible = filteredEvents();
   el.totalCount.textContent = state.events.length;
@@ -166,12 +196,63 @@ function render() {
     `;
     el.timeline.append(card);
   });
+
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = state.visibleMonth.getFullYear();
+  const month = state.visibleMonth.getMonth();
+  const today = toDateInputValue(new Date());
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const eventDates = new Set(state.monthEvents.map(event => event.date));
+
+  el.calendarMonthLabel.textContent = firstDay.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric"
+  });
+  el.calendarDays.innerHTML = "";
+
+  for (let index = 0; index < firstDay.getDay(); index += 1) {
+    const blank = document.createElement("span");
+    blank.className = "calendar-blank";
+    el.calendarDays.append(blank);
+  }
+
+  for (let day = 1; day <= lastDay.getDate(); day += 1) {
+    const dateString = toDateInputValue(new Date(year, month, day));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "calendar-day";
+    button.textContent = day;
+    button.dataset.date = dateString;
+    button.classList.toggle("selected", dateString === state.selectedDate);
+    button.classList.toggle("today", dateString === today);
+    button.classList.toggle("has-event", eventDates.has(dateString));
+    el.calendarDays.append(button);
+  }
 }
 
 async function loadEvents() {
   try {
     const data = await api(`/api/events?date=${encodeURIComponent(state.selectedDate)}`);
     state.events = data.events;
+    render();
+  } catch (error) {
+    showToast(error.message);
+    if (error.message.includes("sign in")) showAuth();
+  }
+}
+
+async function loadMonthEvents() {
+  try {
+    const month = toDateInputValue(state.visibleMonth).slice(0, 7);
+    const data = await api(`/api/events?month=${encodeURIComponent(month)}`);
+    state.monthEvents = data.events;
+    state.events = state.monthEvents
+      .filter(event => event.date === state.selectedDate)
+      .sort((a, b) => a.start.localeCompare(b.start));
     render();
   } catch (error) {
     showToast(error.message);
@@ -288,8 +369,27 @@ el.timeline.addEventListener("click", async event => {
 
 el.datePicker.addEventListener("change", () => {
   state.selectedDate = el.datePicker.value;
+  syncVisibleMonth();
   resetForm();
-  loadEvents();
+  loadMonthEvents();
+});
+
+el.calendarDays.addEventListener("click", event => {
+  const button = event.target.closest("button[data-date]");
+  if (!button) return;
+  state.selectedDate = button.dataset.date;
+  resetForm();
+  loadMonthEvents();
+});
+
+el.prevMonth.addEventListener("click", () => {
+  state.visibleMonth = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth() - 1, 1);
+  loadMonthEvents();
+});
+
+el.nextMonth.addEventListener("click", () => {
+  state.visibleMonth = new Date(state.visibleMonth.getFullYear(), state.visibleMonth.getMonth() + 1, 1);
+  loadMonthEvents();
 });
 
 [el.search, el.statusFilter, el.categoryFilter].forEach(control => {
@@ -302,6 +402,7 @@ el.cancelEdit.addEventListener("click", resetForm);
 async function boot() {
   setAuthMode("login");
   el.datePicker.value = state.selectedDate;
+  syncVisibleMonth();
   resetForm();
   try {
     const data = await api("/api/me");

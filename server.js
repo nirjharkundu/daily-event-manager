@@ -6,9 +6,10 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
+const REQUESTED_DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
+const FALLBACK_DATA_DIR = path.join(ROOT, "data");
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
+let activeDataDir = null;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -19,20 +20,45 @@ const MIME_TYPES = {
   ".png": "image/png"
 };
 
-function ensureDb() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ users: [], sessions: [], events: [] }, null, 2));
+function findWritableDataDir() {
+  const candidates = [
+    REQUESTED_DATA_DIR,
+    FALLBACK_DATA_DIR,
+    path.join(require("os").tmpdir(), "daily-event-manager-data")
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      fs.mkdirSync(candidate, { recursive: true });
+      fs.accessSync(candidate, fs.constants.W_OK);
+      return candidate;
+    } catch (error) {
+      console.warn(`Cannot write to data directory ${candidate}: ${error.message}`);
+    }
   }
+
+  throw new Error("No writable data directory is available.");
+}
+
+function dbFile() {
+  activeDataDir ||= findWritableDataDir();
+  return path.join(activeDataDir, "db.json");
+}
+
+function ensureDb() {
+  const file = dbFile();
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, JSON.stringify({ users: [], sessions: [], events: [] }, null, 2));
+  }
+  return file;
 }
 
 function readDb() {
-  ensureDb();
-  return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+  return JSON.parse(fs.readFileSync(ensureDb(), "utf8"));
 }
 
 function writeDb(db) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  fs.writeFileSync(ensureDb(), JSON.stringify(db, null, 2));
 }
 
 function sendJson(res, status, data) {
@@ -139,13 +165,14 @@ function validateEvent(input) {
 }
 
 async function handleApi(req, res) {
-  const db = readDb();
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   try {
     if (req.method === "GET" && url.pathname === "/api/health") {
-      return sendJson(res, 200, { ok: true });
+      return sendJson(res, 200, { ok: true, dataDir: activeDataDir || REQUESTED_DATA_DIR });
     }
+
+    const db = readDb();
 
     if (req.method === "POST" && url.pathname === "/api/register") {
       const body = await readBody(req);
@@ -310,8 +337,6 @@ function serveStatic(req, res) {
     res.end(content);
   });
 }
-
-ensureDb();
 
 http.createServer((req, res) => {
   if (req.url.startsWith("/api/")) {

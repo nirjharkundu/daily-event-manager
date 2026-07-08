@@ -26,4 +26,6 @@ The included `render.yaml` contains the same settings for Blueprint deployment.
 - Public users can register themselves.
 - Events are shared with every logged-in user.
 - Passwords are hashed before storage.
+- If you set `DATA_DIR=/var/data`, you must also add a Render persistent disk mounted at `/var/data`.
+- Without a persistent disk, the app may run with fallback storage but data can disappear after redeploys or restarts.
 - For serious production use, replace JSON file storage with PostgreSQL and add admin controls for user management.

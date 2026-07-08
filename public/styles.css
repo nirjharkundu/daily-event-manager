@@ -326,6 +326,18 @@ input:focus, select:focus, textarea:focus {
   padding: 0 8px;
 }
 
+.owner-note {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  background: #f2f4ef;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0 10px;
+}
+
 .empty {
   border: 1px dashed #c7cec2;
   border-radius: 8px;

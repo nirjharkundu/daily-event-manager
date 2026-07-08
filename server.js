@@ -144,6 +144,10 @@ function requireAuth(req, res, db) {
   return user;
 }
 
+function canManageEvent(user, event) {
+  return event.createdBy && event.createdBy.id === user.id;
+}
+
 function validateEvent(input) {
   const title = String(input.title || "").trim();
   const date = String(input.date || "").trim();
@@ -280,6 +284,9 @@ async function handleApi(req, res) {
       if (!user) return;
       const event = db.events.find(item => item.id === eventMatch[1]);
       if (!event) return sendJson(res, 404, { error: "Event not found." });
+      if (!canManageEvent(user, event)) {
+        return sendJson(res, 403, { error: "Only the event creator can edit, delete, or mark this event." });
+      }
 
       if (req.method === "DELETE") {
         db.events = db.events.filter(item => item.id !== event.id);

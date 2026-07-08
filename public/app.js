@@ -138,6 +138,14 @@ function render() {
   }
 
   visible.forEach(event => {
+    const isOwner = state.user && event.createdBy.id === state.user.id;
+    const actions = isOwner
+      ? `
+        <button class="icon-btn" data-action="toggle" data-id="${event.id}">${event.done ? "Open" : "Done"}</button>
+        <button class="icon-btn" data-action="edit" data-id="${event.id}">Edit</button>
+        <button class="icon-btn" data-action="delete" data-id="${event.id}">Del</button>
+      `
+      : '<span class="owner-note">View only</span>';
     const card = document.createElement("article");
     card.className = "event-card";
     card.innerHTML = `
@@ -153,9 +161,7 @@ function render() {
         </div>
       </div>
       <div class="event-actions">
-        <button class="icon-btn" data-action="toggle" data-id="${event.id}">${event.done ? "Open" : "Done"}</button>
-        <button class="icon-btn" data-action="edit" data-id="${event.id}">Edit</button>
-        <button class="icon-btn" data-action="delete" data-id="${event.id}">Del</button>
+        ${actions}
       </div>
     `;
     el.timeline.append(card);

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily Event Manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app">
+    <section class="auth-view" id="authView">
+      <div>
+        <h1>Daily Event Manager</h1>
+        <p class="lead">Sign in to manage one shared agenda that everyone can see after login.</p>
+      </div>
+      <form class="auth-card" id="authForm">
+        <div class="tabs" role="tablist" aria-label="Login mode">
+          <button class="tab active" type="button" data-mode="login">Sign in</button>
+          <button class="tab" type="button" data-mode="register">Register</button>
+        </div>
+        <label id="displayNameWrap" hidden>
+          Display name
+          <input id="displayName" autocomplete="name" placeholder="Priya Sharma">
+        </label>
+        <label>
+          Username
+          <input id="username" required autocomplete="username" placeholder="priya">
+        </label>
+        <label>
+          Password
+          <input id="password" required type="password" autocomplete="current-password" placeholder="At least 6 characters">
+        </label>
+        <button class="primary" type="submit" id="authSubmit">Sign in</button>
+        <p class="message" id="authMessage"></p>
+      </form>
+    </section>
+
+    <section class="main-view" id="mainView" hidden>
+      <header>
+        <div>
+          <h1>Shared Daily Agenda</h1>
+          <p class="date-line" id="todayLabel"></p>
+        </div>
+        <div class="header-actions">
+          <span class="user-pill" id="userPill"></span>
+          <input type="date" id="datePicker" aria-label="Select day">
+          <button class="secondary" id="logoutButton" type="button">Log out</button>
+        </div>
+      </header>
+
+      <section class="layout">
+        <aside class="panel composer">
+          <h2 id="formTitle">Add event</h2>
+          <form id="eventForm">
+            <input type="hidden" id="eventId">
+            <label>
+              Event name
+              <input id="title" required maxlength="80" placeholder="Team standup">
+            </label>
+            <div class="field-row">
+              <label>
+                Start
+                <input id="start" type="time" required>
+              </label>
+              <label>
+                End
+                <input id="end" type="time" required>
+              </label>
+            </div>
+            <div class="field-row">
+              <label>
+                Category
+                <select id="category">
+                  <option>Work</option>
+                  <option>Personal</option>
+                  <option>Health</option>
+                  <option>Learning</option>
+                  <option>Errand</option>
+                </select>
+              </label>
+              <label>
+                Priority
+                <select id="priority">
+                  <option>Normal</option>
+                  <option>High</option>
+                  <option>Low</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Notes
+              <textarea id="notes" maxlength="240" placeholder="Location, prep notes, links, or reminders"></textarea>
+            </label>
+            <button class="primary" type="submit">Save event</button>
+            <button class="ghost" id="cancelEdit" type="button" hidden>Cancel edit</button>
+          </form>
+        </aside>
+
+        <section>
+          <div class="stats" aria-label="Daily summary">
+            <div class="stat"><strong id="totalCount">0</strong><span>Events</span></div>
+            <div class="stat"><strong id="doneCount">0</strong><span>Done</span></div>
+            <div class="stat"><strong id="focusCount">0</strong><span>High priority</span></div>
+          </div>
+
+          <div class="panel agenda">
+            <div class="agenda-head">
+              <h2>Visible to all logged-in users</h2>
+              <button class="secondary" id="refreshButton" type="button">Refresh</button>
+            </div>
+            <div class="toolbar">
+              <input id="search" placeholder="Search events or notes" aria-label="Search events">
+              <select id="statusFilter" aria-label="Filter by status">
+                <option value="all">All events</option>
+                <option value="open">Open only</option>
+                <option value="done">Done only</option>
+              </select>
+              <select id="categoryFilter" aria-label="Filter by category">
+                <option value="all">All categories</option>
+                <option>Work</option>
+                <option>Personal</option>
+                <option>Health</option>
+                <option>Learning</option>
+                <option>Errand</option>
+              </select>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

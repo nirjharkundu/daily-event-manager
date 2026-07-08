@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: daily-event-manager
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: event-data
+      mountPath: /var/data
+      sizeGB: 1
